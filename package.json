@@ -5,9 +5,9 @@
   "license": "MIT",
   "private": false,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "dev": "node init && next dev",
+    "build": "node init && next build",
+    "start": "node init && next start",
     "lint": "next lint"
   },
   "dependencies": {
@@ -28,7 +28,7 @@
     "next-transpile-modules": "^10.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "zustand": "^3.6.9"
+    "zustand": "^5.0.9"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
