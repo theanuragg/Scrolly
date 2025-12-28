@@ -1,5 +1,6 @@
 // Next, React
 import { FC, useEffect, useState, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 
 
@@ -17,9 +18,17 @@ export const HomeView: FC = ({ }) => {
   const wallet = useWallet();
   const { connection } = useConnection();
 
-
   const balance = useUserSOLBalanceStore((s) => s.balance)
   const { getUserSOLBalance } = useUserSOLBalanceStore()
+
+  // Add loading state
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate loading and ensure component mounts properly
+    const timer = setTimeout(() => setIsLoading(false), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (wallet.publicKey) {
@@ -28,8 +37,19 @@ export const HomeView: FC = ({ }) => {
     }
   }, [wallet.publicKey, connection, getUserSOLBalance])
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center bg-gray-900 min-h-full">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-white text-xl">Loading Ping Pong Game...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex flex-col min-h-full">
       {/* Header Section */}
       <div className="md:hero mx-auto p-4 flex-shrink-0">
         <div className="md:hero-content flex flex-col">
@@ -71,7 +91,7 @@ export const HomeView: FC = ({ }) => {
 
       {/* Full-screen Game Section */}
       <div className="flex-1 flex items-center justify-center p-4">
-        <GameSandbox />
+        {typeof window !== 'undefined' && <GameSandbox />}
       </div>
     </div>
   );
@@ -252,6 +272,13 @@ const GameSandbox: FC = () => {
             return resetBall;
           } else {
             setGameOver(true);
+            // Stop music when game ends
+            setTimeout(() => {
+              const iframe = document.getElementById('background-music') as HTMLIFrameElement;
+              if (iframe && iframe.contentWindow) {
+                iframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+              }
+            }, 100);
             return newBall;
           }
         }
@@ -291,6 +318,15 @@ const GameSandbox: FC = () => {
     setGameOver(false);
     setPaused(false);
     setBallSpeed(0.8);
+
+    // Auto-start music when game begins
+    setMuted(false);
+    setTimeout(() => {
+      const iframe = document.getElementById('background-music') as HTMLIFrameElement;
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+      }
+    }, 100);
   };
 
   const restartGame = () => {
@@ -299,7 +335,19 @@ const GameSandbox: FC = () => {
 
   const togglePause = () => {
     if (gameStarted && !gameOver) {
-      setPaused(!paused);
+      const newPausedState = !paused;
+      setPaused(newPausedState);
+
+      // Control music based on pause state
+      setTimeout(() => {
+        const iframe = document.getElementById('background-music') as HTMLIFrameElement;
+        if (iframe && iframe.contentWindow) {
+          const action = newPausedState
+            ? '{"event":"command","func":"pauseVideo","args":""}'
+            : '{"event":"command","func":"playVideo","args":""}';
+          iframe.contentWindow.postMessage(action, '*');
+        }
+      }, 100);
     }
   };
 
@@ -314,17 +362,19 @@ const GameSandbox: FC = () => {
   };
 
   return (
-    <div className="w-full h-[700px] min-h-[700px] max-w-screen-xl rounded-xl overflow-hidden relative shadow-2xl" style={{ backgroundImage: `url('https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/db152321-d045-41b8-a835-86af80fecc29-umbraprivacy-com/assets/images/691b860b87da59a50eecbc1f_bg-2.avif')`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
-      {/* Hidden YouTube player for background music (audio only) */}
-      <iframe
-        id="background-music"
-        width="1"
-        height="1"
-        src="https://www.youtube.com/embed/57C13H0BnnU?autoplay=0&controls=0&disablekb=1&fs=0&iv_load_policy=3&loop=1&modestbranding=1&playsinline=1&rel=0&showinfo=0&enablejsapi=1"
-        frameBorder="0"
-        allow="autoplay; encrypted-media"
-        style={{ position: 'absolute', top: '-9999px', left: '-9999px', opacity: 0, pointerEvents: 'none' }}
-      ></iframe>
+    <div className="w-full h-[700px] min-h-[700px] max-w-screen-xl mb-52 rounded-xl overflow-hidden relative shadow-2xl" style={{ backgroundImage: `url('https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/db152321-d045-41b8-a835-86af80fecc29-umbraprivacy-com/assets/images/691b860b87da59a50eecbc1f_bg-2.avif')`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
+      {/* Hidden YouTube player for background music (audio only) - only render on client side */}
+      {typeof window !== 'undefined' && (
+        <iframe
+          id="background-music"
+          width="1"
+          height="1"
+          src="https://www.youtube.com/embed/57C13H0BnnU?autoplay=0&controls=0&disablekb=1&fs=0&iv_load_policy=3&loop=1&playlist=57C13H0BnnU&modestbranding=1&playsinline=1&rel=0&showinfo=0&enablejsapi=1"
+          frameBorder="0"
+          allow="autoplay; encrypted-media"
+          style={{ position: 'absolute', top: '-9999px', left: '-9999px', opacity: 0, pointerEvents: 'none' }}
+        ></iframe>
+      )}
 
       {/* UI Elements - Top Center: Lives (Stars) */}
       {/* <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-20 flex gap-3">

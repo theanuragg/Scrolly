@@ -4,12 +4,12 @@ import { HomeView } from "../views";
 
 const Home: NextPage = (props) => {
   return (
-    <div>
+    <div className="min-h-screen">
       <Head>
-        <title>Solana Scaffold</title>
+        <title>Ping Pong GameJam - Solana Integration</title>
         <meta
           name="description"
-          content="Solana Scaffold"
+          content="Real-time ping pong game with Solana blockchain integration and cryptocurrency rewards"
         />
       </Head>
       <HomeView />
